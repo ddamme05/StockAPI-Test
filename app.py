@@ -17,7 +17,6 @@ ALPHAVANTAGE_API_KEY = os.getenv('ALPHAVANTAGE_API_KEY')
 
 ts = TimeSeries(key=ALPHAVANTAGE_API_KEY, output_format="pandas")
 
-
 @app.route("/stock/finnhub/<symbol>")
 def get_stock_data_finnhub(symbol):
     """Fetch stock data for a given symbol from Finnhub."""
@@ -27,6 +26,24 @@ def get_stock_data_finnhub(symbol):
     response = requests.get(finnhub_url)
     data = response.json()
     return jsonify(data)
+
+@app.route("/stock/yfinance/historical/<symbol>")
+def get_historical_data_yfinance(symbol):
+    """Fetch historical stock data for a given symbol using yfinance with customizable period and interval."""
+    period = request.args.get('period', '1y')  
+    interval = request.args.get('interval', '1d') 
+
+    ticker = yf.Ticker(symbol)
+    # Fetch the historical data based on period and interval
+    data = ticker.history(period=period, interval=interval)
+    # Reset index to convert the index to a column
+    data.reset_index(inplace=True)
+    # Convert the 'Date' column to string to avoid serialization issues
+    data['Date'] = data['Date'].dt.strftime('%Y-%m-%d')
+    # Convert the DataFrame to a dictionary for easy JSON serialization
+    data_dict = data.to_dict(orient="records")
+    return jsonify(data_dict)
+
 
 
 @app.route("/stock/alphavantage/<symbol>")
